@@ -275,7 +275,7 @@
             <button class="time-btn" onclick="executeTimeStep(1)">[6. 1x: +10💰 [ENDS TURN]]</button>
             <button class="time-btn" onclick="executeTimeStep(2)">[7. 2x: +25💰 [ENDS TURN]]</button>
         </div>
-    </div><!-- REPLACE PIECE 3 OF 3 IN YOUR INDEX.HTML FILE WITH THIS COMPONENT -->
+    </div><!-- REPLACE PIECE 3 OF 3 IN YOUR INDEX.HTML FILE WITH THIS COMPONENT --><!-- PART 1: COPY AND PASTE THIS TOP SECTION INTO THE JAVASCRIPT REGION -->
     <script>
         const ROWS = 8;
         const COLS = 10;
@@ -296,7 +296,8 @@
             waveActive: true,
             selectedItem: null,
             grid: Array(ROWS).fill(null).map(() => Array(COLS).fill(null)),
-            goblins: []
+            goblins: [],
+            explosions: [] 
         };
 
         function initGame() {
@@ -343,8 +344,11 @@
                     
                     let cellAsset = gameState.grid[r][c];
                     let goblinHere = gameState.goblins.find(g => g.r === r && g.c === c);
+                    let explosionHere = gameState.explosions.find(e => e.r === r && e.c === c);
 
-                    if (goblinHere) {
+                    if (explosionHere) {
+                        cellDiv.innerText = '💥';
+                    } else if (goblinHere) {
                         cellDiv.innerText = goblinHere.icon;
                     } else if (cellAsset) {
                         cellDiv.innerText = cellAsset.icon;
@@ -401,19 +405,32 @@
                 radar.innerHTML = exceptions.join('<br>');
             }
         }
-
+<!-- PART 2: COPY AND PASTE THIS BOTTOM SECTION TO COMPLETE THE JAVASCRIPT RUNTIME -->
         function handleCellClick(r, c) {
             if(!gameState.selectedItem) return;
             if(gameState.grid[r][c] !== null) return;
 
-            gameState.gold -= gameState.selectedItem.cost;
-            gameState.grid[r][c] = {
-                type: gameState.selectedItem.type,
-                icon: gameState.selectedItem.icon,
-                hp: gameState.selectedItem.type === 'unit' ? 2 : 1,
-                maxHp: gameState.selectedItem.type === 'unit' ? 2 : 1
-            };
+            if(gameState.selectedItem.id === 4) {
+                gameState.grid[r][c] = {
+                    type: 'unit',
+                    icon: '🧚',
+                    hp: 1,
+                    maxHp: 1,
+                    range: 1,
+                    role: 'healer'
+                };
+            } else {
+                gameState.grid[r][c] = {
+                    type: gameState.selectedItem.type,
+                    icon: gameState.selectedItem.icon,
+                    hp: gameState.selectedItem.id === 3 ? 2 : 1, 
+                    maxHp: gameState.selectedItem.id === 3 ? 2 : 1,
+                    range: gameState.selectedItem.id === 1 ? 2 : (gameState.selectedItem.id === 2 ? 3 : 1),
+                    role: gameState.selectedItem.id === 4 ? 'healer' : 'attacker'
+                };
+            }
             
+            gameState.gold -= gameState.selectedItem.cost;
             gameState.selectedItem = null;
             updateDashboard();
         }
@@ -422,30 +439,63 @@
             for(let s=0; s<steps; s++) {
                 gameState.turn++;
                 gameState.gold += (steps === 2 && s === 1) ? 15 : 10;
-                
+                gameState.explosions = []; 
+
+                // 1. DYNAMIC DEFENDER ENGINE (COMBAT & HEALING CASTER)
+                for(let r=0; r<ROWS; r++) {
+                    for(let c=0; c<COLS; c++) {
+                        let asset = gameState.grid[r][c];
+                        if (!asset || asset.icon === '🧱' || asset.icon === '🏰') continue;
+
+                        if (asset.role === 'healer') {
+                            let directions = [[-1,0],[1,0],[0,-1],[0,1]];
+                            for (let d of directions) {
+                                let nr = r + d[0], nc = c + d[1];
+                                if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                                    let target = gameState.grid[nr][nc];
+                                    if (target && target.hp < target.maxHp) {
+                                        target.hp = target.maxHp; 
+                                        break;
+                                    }
+                                }
+                            }
+                        } else {
+                            let targetGoblin = gameState.goblins.find(g => {
+                                let rowDiff = Math.abs(g.r - r);
+                                let colDiff = Math.abs(g.c - c);
+                                return (rowDiff === 0 && colDiff <= asset.range) || (colDiff === 0 && rowDiff <= asset.range);
+                            });
+
+                            if (targetGoblin) {
+                                targetGoblin.hp -= 1; 
+                                gameState.explosions.push({ r: targetGoblin.r, c: targetGoblin.c });
+                            }
+                        }
+                    }
+                }
+
+                gameState.goblins = gameState.goblins.filter(g => g.hp > 0);
+
+                // 2. ENEMY INTELLIGENT CARDINAL PROGRESSION ENGINE
                 gameState.goblins.forEach(goblin => {
                     let nextR = goblin.r + 1;
                     if(nextR < ROWS) {
                         let blockingAsset = gameState.grid[nextR][goblin.c];
                         
-                        // Active Wall Demolition Check
                         if(blockingAsset && blockingAsset.icon === '🧱') {
-                            blockingAsset.hp -= 1; // Sledgehammer damage!
-                            
-                            // Visual explosion flare on collision
-                            const targetCell = document.querySelector(`[data-row="${nextR}"][data-col="${goblin.c}"]`);
-                            if(targetCell) targetCell.innerText = '💥';
-                            
-                            if(blockingAsset.hp <= 0) {
-                                gameState.grid[nextR][goblin.c] = null; // Wall broken!
-                            }
-                            // Goblin stops movement to perform the structural attack action
+                            blockingAsset.hp -= 1; 
+                            gameState.explosions.push({ r: nextR, c: goblin.c });
+                            if(blockingAsset.hp <= 0) gameState.grid[nextR][goblin.c] = null;
+                        } else if (blockingAsset && blockingAsset.icon === '⚔️') {
+                            blockingAsset.hp -= 1;
+                            goblin.hp -= 1; 
+                            gameState.explosions.push({ r: nextR, c: goblin.c });
+                            if(blockingAsset.hp <= 0) gameState.grid[nextR][goblin.c] = null;
                         } else if(blockingAsset && blockingAsset.type === 'structure' && blockingAsset.icon !== '🏰') {
-                            // Non-wall structures cause path re-routing logic
                             if(goblin.c + 1 < COLS && !gameState.grid[goblin.r][goblin.c+1]) goblin.c++;
                             else if(goblin.c - 1 >= 0 && !gameState.grid[goblin.r][goblin.c-1]) goblin.c--;
                         } else {
-                            goblin.r = nextR; // Lane clear: move forward
+                            goblin.r = nextR; 
                         }
                     }
                     
