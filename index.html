@@ -3,186 +3,450 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emoji Clans RTS Prototype</title>
+    <title>⚔️ Emoji Wars ⚔️</title>
     <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-color: #161f30;
+            --border-color: #2a3b5c;
+            --text-color: #e2e8f0;
+            --accent-color: #38bdf8;
+        }
+
         body {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            font-family: monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-        #hud {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            background: #2a2a2a;
-            padding: 10px 20px;
-            border-radius: 5px;
-        }
-        #controls {
-            margin-bottom: 15px;
-        }
-        button {
-            background: #444;
-            color: white;
-            border: 2px solid #666;
-            padding: 8px 15px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 0 5px;
-            border-radius: 4px;
-        }
-        button.active {
-            background: #00bcd4;
-            border-color: #00e5ff;
-        }
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(10, 40px);
-            grid-template-rows: repeat(10, 40px);
-            gap: 2px;
-            background-color: #333;
-            padding: 5px;
-            border-radius: 5px;
-        }
-        .cell {
-            width: 40px;
-            height: 40px;
-            background-color: #2e7d32; /* Grass Green */
-            display: flex;
             justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-            cursor: pointer;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
             user-select: none;
-            transition: background 0.1s;
         }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .wave-status {
+            font-size: 16px;
+            color: #f43f5e;
+            margin-bottom: 10px;
+        }
+
+        .divider {
+            width: 100%;
+            max-width: 800px;
+            border-top: 2px dashed var(--border-color);
+            margin: 8px 0;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            background-color: var(--panel-color);
+            border: 2px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .grid-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-headers {
+            display: flex;
+            padding-left: 30px;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .header-cell {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .grid-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .row-label {
+            width: 26px;
+            text-align: right;
+            margin-right: 4px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            background-color: #15803d;
+            border: 1px solid #166534;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
         .cell:hover {
-            background-color: #388e3c;
+            background-color: #16a34a;
+        }
+
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-left: 2px dashed var(--border-color);
+            padding-left: 15px;
+            font-size: 13px;
+        }
+
+        .sidebar-header {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+        }
+
+        .radar-box, .guide-box {
+            background-color: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .resource-bar {
+            display: flex;
+            justify-content: space-between;
+            max-width: 800px;
+            width: 100%;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: var(--panel-color);
+            border: 2px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+
+        .shop-container {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--panel-color);
+            border: 2px solid var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+
+        .shop-header {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+
+        .shop-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .shop-item:hover:not(.disabled) {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        .shop-item.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .shop-item.active {
+            background: rgba(34, 197, 94, 0.15);
+            border-color: #22c55e;
+        }
+
+        .time-controls {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 8px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 8px;
+            margin-top: 4px;
+        }
+
+        .time-btn {
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .time-btn:hover {
+            background: #334155;
         }
     </style>
 </head>
 <body>
 
-    <h1>🏰 EMOJI CLANS ⚔️</h1>
+    <div class="title">⚔️ EMOJI WARS ⚔️</div>
+    <div id="waveStatus" class="wave-status">📢 WAVE STATUS: 🌊 Wave 1 In Progress!</div>
     
-    <div id="hud">
-        Gold: <span id="gold-val">100</span>🪙 | Turn: <span id="turn-val">0</span> | Mode: <span id="mode-val">Deploy Barbarian</span>
+    <div class="divider"></div>
+
+    <div class="main-container">
+        <div class="grid-wrapper">
+            <div class="column-headers" id="colHeaders"></div>
+            <div id="gameGrid"></div>
+        </div>
+
+        <div class="sidebar">
+            <div>
+                <div class="sidebar-header">[🔍 SYSTEM DASHBOARD]</div>
+                <div class="radar-box">
+                    <div style="font-weight:bold; margin-bottom:4px;">📊 HEALTH RADAR:</div>
+                    <div id="healthRadar" style="line-height: 1.4; color: #a7f3d0;">• Status: All assets at 100% capacity</div>
+                </div>
+            </div>
+            <div style="border-top: 1px dashed var(--border-color); margin: 4px 0;"></div>
+            <div class="guide-box">
+                <div style="font-weight:bold; margin-bottom:4px;">📖 TARGETING GUIDE:</div>
+                <div style="color: #94a3b8; line-height: 1.4;">
+                    • Click grid tile to deploy selected shop item.<br>
+                    • Enter as [Row (1-8), 1️⃣ Column 🔟]<br>
+                    • Ex: "Build Wall at 5, 5"
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div id="controls">
-        <button id="btn-barb" class="active" onclick="setMode('barb', 20, 'Deploy Barbarian')">⚔️ Barbarian (20g)</button>
-        <button id="btn-wall" onclick="setMode('wall', 10, 'Build Wall')">🧱 Wall (10g)</button>
-        <button id="btn-tower" onclick="setMode('tower', 40, 'Build Tower')">🏹 Tower (40g)</button>
+    <div class="resource-bar">
+        <div id="resGold">💰 GOLD: 100</div>
+        <div id="resTurn">⏳ TURN: 0</div>
+        <div id="resTH">🏰 TOWN HALL HP: 🔴🔴🔴</div>
+        <div id="resWave">🌊 WAVE: 1/5</div>
     </div>
 
-    <div id="grid"></div>
-
+    <div class="shop-container">
+        <div class="shop-header" id="shopHeader">🛠️ Affordable Shop</div>
+        <div class="shop-grid" id="shopGrid"></div>
+        <div class="time-controls">
+            <button class="time-btn" onclick="executeTimeStep(1)">[6. 1x: +10💰 [ENDS TURN]]</button>
+            <button class="time-btn" onclick="executeTimeStep(2)">[7. 2x: +25💰 [ENDS TURN]]</button>
+        </div>
+    </div>
     <script>
-        const GRID_SIZE = 10;
-        let gold = 100;
-        let turn = 0;
-        let currentMode = 'barb';
-        let currentCost = 20;
+        const ROWS = 8;
+        const COLS = 10;
+        
+        const SHOP_ITEMS = [
+            { id: 1, name: 'Archer Tower', cost: 40, icon: '🏹', type: 'structure', desc: 'Auto-shoots cardinal range 2' },
+            { id: 2, name: 'Archer Unit', cost: 25, icon: '🏹', type: 'unit', desc: 'Mobile long range 3 sniper' },
+            { id: 3, name: 'Barbarian', cost: 20, icon: '⚔️', type: 'unit', desc: 'Melee unit, hunts targets' },
+            { id: 4, name: 'Healer Unit', cost: 15, icon: '🧚', type: 'unit', desc: 'Garrisons on Walls, patches units' },
+            { id: 5, name: 'Build Wall', cost: 10, icon: '🧱', type: 'structure', desc: 'Roadblock barrier' }
+        ];
 
-        // Grid Array tracking game entities
-        // Empty = 🟩, Town Hall = 🏰, Wall = 🧱, Barbarian = ⚔️, Goblin = 👺, Tower = 🏹
-        let mapData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('🟩'));
+        let gameState = {
+            gold: 100,
+            turn: 0,
+            wave: 1,
+            townHallHp: 3,
+            waveActive: true,
+            selectedItem: null,
+            grid: Array(ROWS).fill(null).map(() => Array(COLS).fill(null)),
+            goblins: []
+        };
 
-        // Initialize Core Bases
-        mapData[8][4] = '🏰'; // Player Town Hall near bottom
-        mapData[0][5] = '👺'; // Initial Enemy Spawner/Goblin at top
-
-        function setMode(mode, cost, text) {
-            currentMode = mode;
-            currentCost = cost;
-            document.getElementById('mode-val').innerText = text;
-            document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
-            document.getElementById(`btn-${mode}`).classList.add('active');
+        function initGame() {
+            gameState.grid[6][4] = { type: 'townhall', icon: '🏰', hp: 3, maxHp: 3 };
+            gameState.goblins.push({ r: 0, c: 4, hp: 2, maxHp: 2, icon: '👺' });
+            renderColumnHeaders();
+            updateDashboard();
         }
 
-        function renderGrid() {
-            const gridEl = document.getElementById('grid');
-            gridEl.innerHTML = '';
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'cell';
-                    cell.innerText = mapData[r][c];
-                    cell.onclick = () => handleCellClick(r, c);
-                    gridEl.appendChild(cell);
+        function renderColumnHeaders() {
+            const container = document.getElementById('colHeaders');
+            container.innerHTML = '';
+            const numEmojis = ['1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+            for(let i=0; i<COLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'header-cell';
+                cell.innerText = numEmojis[i];
+                container.appendChild(cell);
+            }
+        }
+
+        function updateDashboard() {
+            document.getElementById('resGold').innerText = `💰 GOLD: ${gameState.gold}`;
+            document.getElementById('resTurn').innerText = `⏳ TURN: ${gameState.turn}`;
+            document.getElementById('resTH').innerText = `🏰 TOWN HALL HP: ${'🔴'.repeat(Math.max(0, gameState.townHallHp))}`;
+            document.getElementById('resWave').innerText = `🌊 WAVE: ${gameState.wave}/5`;
+            document.getElementById('shopHeader').innerText = `🛠️ Affordable Shop (Options for ${gameState.gold}💰 or less)`;
+            
+            const gridContainer = document.getElementById('gameGrid');
+            gridContainer.innerHTML = '';
+            
+            for(let r=0; r<ROWS; r++) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'grid-row';
+                
+                const label = document.createElement('div');
+                label.className = 'row-label';
+                label.innerText = r + 1;
+                rowDiv.appendChild(label);
+
+                for(let c=0; c<COLS; c++) {
+                    const cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    
+                    let cellAsset = gameState.grid[r][c];
+                    let goblinHere = gameState.goblins.find(g => g.r === r && g.c === c);
+
+                    if (goblinHere) {
+                        cellDiv.innerText = goblinHere.icon;
+                    } else if (cellAsset) {
+                        cellDiv.innerText = cellAsset.icon;
+                    } else {
+                        cellDiv.innerText = '🟩';
+                    }
+
+                    cellDiv.onclick = () => handleCellClick(r, c);
+                    rowDiv.appendChild(cellDiv);
                 }
-            }
-            document.getElementById('gold-val').innerText = gold;
-            document.getElementById('turn-val').innerText = turn;
-        }
-
-        function handleCellClick(r, c) {
-            // Check if player has enough gold and tile is clear grass
-            if (mapData[r][c] !== '🟩') return;
-            if (gold < currentCost) {
-                alert("Not enough gold!");
-                return;
+                gridContainer.appendChild(rowDiv);
             }
 
-            // Spend Gold and place Entity
-            gold -= currentCost;
-            if (currentMode === 'barb') mapData[r][c] = '⚔️';
-            if (currentMode === 'wall') mapData[r][c] = '🧱';
-            if (currentMode === 'tower') mapData[r][c] = '🏹';
+            const shopGrid = document.getElementById('shopGrid');
+            shopGrid.innerHTML = '';
+            SHOP_ITEMS.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `shop-item ${gameState.gold < item.cost ? 'disabled' : ''} ${gameState.selectedItem?.id === item.id ? 'active' : ''}`;
+                itemDiv.innerHTML = `<div><strong>${item.name}</strong> (${item.cost}💰)<br><span style="font-size:10px;color:#94a3b8;">${item.desc}</span></div>`;
+                if(gameState.gold >= item.cost) {
+                    itemDiv.onclick = () => {
+                        gameState.selectedItem = gameState.selectedItem?.id === item.id ? null : item;
+                        updateDashboard();
+                    };
+                }
+                shopGrid.appendChild(itemDiv);
+            });
 
-            // Run Game Turn Loop
-            processTurn();
+            updateHealthRadar();
         }
 
-        function processTurn() {
-            turn++;
-            gold += 10; // Passive income per click
+        function updateHealthRadar() {
+            const radar = document.getElementById('healthRadar');
+            let exceptions = [];
 
-            // 1. Process Player defenses (Towers shooting adjacent goblins)
-            // 2. Process Enemy AI movements (Goblins marching down toward Town Hall)
-            let newMap = mapData.map(row => [...row]);
+            gameState.goblins.forEach((g, idx) => {
+                if(g.hp < g.maxHp) {
+                    exceptions.push(`• 👺 Goblin #${idx+1} (${g.r+1},${g.c+1}): [${'🩸'.repeat(g.maxHp - g.hp)}${'🔴'.repeat(g.hp)}]`);
+                }
+            });
 
-            for (let r = 0; r < GRID_SIZE; r++) {
-                for (let c = 0; c < GRID_SIZE; c++) {
-                    if (mapData[r][c] === '👺') {
-                        // Simple AI: Goblin moves down toward row 8
-                        if (r + 1 < GRID_SIZE && mapData[r+1][c] === '🟩') {
-                            newMap[r+1][c] = '👺';
-                            newMap[r][c] = '🟩';
-                        } else if (r + 1 < GRID_SIZE && mapData[r+1][c] === '🏰') {
-                            alert("Game Over! The Goblins breached your Town Hall!");
-                            resetGame();
-                            return;
-                        }
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    let asset = gameState.grid[r][c];
+                    if(asset && asset.hp && asset.hp < asset.maxHp) {
+                        exceptions.push(`• ${asset.icon} Asset (${r+1},${c+1}): [${'🩸'.repeat(asset.maxHp - asset.hp)}${'🔴'.repeat(asset.hp)}]`);
                     }
                 }
             }
 
-            // Randomly spawn new enemy at top every 3 turns
-            if (turn % 3 === 0) {
-                let spawnCol = Math.floor(Math.random() * GRID_SIZE);
-                if (newMap[0][spawnCol] === '🟩') newMap[0][spawnCol] = '👺';
+            if(exceptions.length === 0) {
+                radar.innerHTML = '• Status: All assets at 100% capacity<br>• Damage exceptions will flash here';
+            } else {
+                radar.innerHTML = exceptions.join('<br>');
             }
-
-            mapData = newMap;
-            renderGrid();
         }
 
-        function resetGame() {
-            gold = 100;
-            turn = 0;
-            mapData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('🟩'));
-            mapData[8][4] = '🏰';
-            mapData[0][5] = '👺';
-            renderGrid();
+        function handleCellClick(r, c) {
+            if(!gameState.selectedItem) return;
+            if(gameState.grid[r][c] !== null) return;
+
+            gameState.gold -= gameState.selectedItem.cost;
+            gameState.grid[r][c] = {
+                type: gameState.selectedItem.type,
+                icon: gameState.selectedItem.icon,
+                hp: gameState.selectedItem.type === 'unit' ? 2 : 1,
+                maxHp: gameState.selectedItem.type === 'unit' ? 2 : 1
+            };
+            
+            gameState.selectedItem = null;
+            updateDashboard();
         }
 
-        // Run Engine on load
-        renderGrid();
+        function executeTimeStep(steps) {
+            for(let s=0; s<steps; s++) {
+                gameState.turn++;
+                gameState.gold += (steps === 2 && s === 1) ? 15 : 10;
+                
+                gameState.goblins.forEach(goblin => {
+                    let nextR = goblin.r + 1;
+                    if(nextR < ROWS) {
+                        let blockingAsset = gameState.grid[nextR][goblin.c];
+                        if(blockingAsset && blockingAsset.type === 'structure') {
+                            if(goblin.c + 1 < COLS && !gameState.grid[goblin.r][goblin.c+1]) goblin.c++;
+                            else if(goblin.c - 1 >= 0 && !gameState.grid[goblin.r][goblin.c-1]) goblin.c--;
+                        } else {
+                            goblin.r = nextR;
+                        }
+                    }
+                    
+                    if(goblin.r === 6 && goblin.c === 4) {
+                        gameState.townHallHp--;
+                        goblin.hp = 0;
+                    }
+                });
+
+                gameState.goblins = gameState.goblins.filter(g => g.hp > 0);
+            }
+            updateDashboard();
+        }
+
+        window.onload = initGame;
     </script>
 </body>
 </html>
