@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Clans RTS Prototype</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        #hud {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            background: #2a2a2a;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        #controls {
+            margin-bottom: 15px;
+        }
+        button {
+            background: #444;
+            color: white;
+            border: 2px solid #666;
+            padding: 8px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0 5px;
+            border-radius: 4px;
+        }
+        button.active {
+            background: #00bcd4;
+            border-color: #00e5ff;
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(10, 40px);
+            grid-template-rows: repeat(10, 40px);
+            gap: 2px;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #2e7d32; /* Grass Green */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.1s;
+        }
+        .cell:hover {
+            background-color: #388e3c;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏰 EMOJI CLANS ⚔️</h1>
+    
+    <div id="hud">
+        Gold: <span id="gold-val">100</span>🪙 | Turn: <span id="turn-val">0</span> | Mode: <span id="mode-val">Deploy Barbarian</span>
+    </div>
+
+    <div id="controls">
+        <button id="btn-barb" class="active" onclick="setMode('barb', 20, 'Deploy Barbarian')">⚔️ Barbarian (20g)</button>
+        <button id="btn-wall" onclick="setMode('wall', 10, 'Build Wall')">🧱 Wall (10g)</button>
+        <button id="btn-tower" onclick="setMode('tower', 40, 'Build Tower')">🏹 Tower (40g)</button>
+    </div>
+
+    <div id="grid"></div>
+
+    <script>
+        const GRID_SIZE = 10;
+        let gold = 100;
+        let turn = 0;
+        let currentMode = 'barb';
+        let currentCost = 20;
+
+        // Grid Array tracking game entities
+        // Empty = 🟩, Town Hall = 🏰, Wall = 🧱, Barbarian = ⚔️, Goblin = 👺, Tower = 🏹
+        let mapData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('🟩'));
+
+        // Initialize Core Bases
+        mapData[8][4] = '🏰'; // Player Town Hall near bottom
+        mapData[0][5] = '👺'; // Initial Enemy Spawner/Goblin at top
+
+        function setMode(mode, cost, text) {
+            currentMode = mode;
+            currentCost = cost;
+            document.getElementById('mode-val').innerText = text;
+            document.querySelectorAll('#controls button').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+        }
+
+        function renderGrid() {
+            const gridEl = document.getElementById('grid');
+            gridEl.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.innerText = mapData[r][c];
+                    cell.onclick = () => handleCellClick(r, c);
+                    gridEl.appendChild(cell);
+                }
+            }
+            document.getElementById('gold-val').innerText = gold;
+            document.getElementById('turn-val').innerText = turn;
+        }
+
+        function handleCellClick(r, c) {
+            // Check if player has enough gold and tile is clear grass
+            if (mapData[r][c] !== '🟩') return;
+            if (gold < currentCost) {
+                alert("Not enough gold!");
+                return;
+            }
+
+            // Spend Gold and place Entity
+            gold -= currentCost;
+            if (currentMode === 'barb') mapData[r][c] = '⚔️';
+            if (currentMode === 'wall') mapData[r][c] = '🧱';
+            if (currentMode === 'tower') mapData[r][c] = '🏹';
+
+            // Run Game Turn Loop
+            processTurn();
+        }
+
+        function processTurn() {
+            turn++;
+            gold += 10; // Passive income per click
+
+            // 1. Process Player defenses (Towers shooting adjacent goblins)
+            // 2. Process Enemy AI movements (Goblins marching down toward Town Hall)
+            let newMap = mapData.map(row => [...row]);
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (mapData[r][c] === '👺') {
+                        // Simple AI: Goblin moves down toward row 8
+                        if (r + 1 < GRID_SIZE && mapData[r+1][c] === '🟩') {
+                            newMap[r+1][c] = '👺';
+                            newMap[r][c] = '🟩';
+                        } else if (r + 1 < GRID_SIZE && mapData[r+1][c] === '🏰') {
+                            alert("Game Over! The Goblins breached your Town Hall!");
+                            resetGame();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Randomly spawn new enemy at top every 3 turns
+            if (turn % 3 === 0) {
+                let spawnCol = Math.floor(Math.random() * GRID_SIZE);
+                if (newMap[0][spawnCol] === '🟩') newMap[0][spawnCol] = '👺';
+            }
+
+            mapData = newMap;
+            renderGrid();
+        }
+
+        function resetGame() {
+            gold = 100;
+            turn = 0;
+            mapData = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('🟩'));
+            mapData[8][4] = '🏰';
+            mapData[0][5] = '👺';
+            renderGrid();
+        }
+
+        // Run Engine on load
+        renderGrid();
+    </script>
+</body>
+</html>
