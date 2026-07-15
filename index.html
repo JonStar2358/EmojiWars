@@ -275,7 +275,7 @@
             <button class="time-btn" onclick="executeTimeStep(1)">[6. 1x: +10💰 [ENDS TURN]]</button>
             <button class="time-btn" onclick="executeTimeStep(2)">[7. 2x: +25💰 [ENDS TURN]]</button>
         </div>
-    </div>
+    </div><!-- REPLACE PIECE 3 OF 3 IN YOUR INDEX.HTML FILE WITH THIS COMPONENT -->
     <script>
         const ROWS = 8;
         const COLS = 10;
@@ -427,11 +427,25 @@
                     let nextR = goblin.r + 1;
                     if(nextR < ROWS) {
                         let blockingAsset = gameState.grid[nextR][goblin.c];
-                        if(blockingAsset && blockingAsset.type === 'structure') {
+                        
+                        // Active Wall Demolition Check
+                        if(blockingAsset && blockingAsset.icon === '🧱') {
+                            blockingAsset.hp -= 1; // Sledgehammer damage!
+                            
+                            // Visual explosion flare on collision
+                            const targetCell = document.querySelector(`[data-row="${nextR}"][data-col="${goblin.c}"]`);
+                            if(targetCell) targetCell.innerText = '💥';
+                            
+                            if(blockingAsset.hp <= 0) {
+                                gameState.grid[nextR][goblin.c] = null; // Wall broken!
+                            }
+                            // Goblin stops movement to perform the structural attack action
+                        } else if(blockingAsset && blockingAsset.type === 'structure' && blockingAsset.icon !== '🏰') {
+                            // Non-wall structures cause path re-routing logic
                             if(goblin.c + 1 < COLS && !gameState.grid[goblin.r][goblin.c+1]) goblin.c++;
                             else if(goblin.c - 1 >= 0 && !gameState.grid[goblin.r][goblin.c-1]) goblin.c--;
                         } else {
-                            goblin.r = nextR;
+                            goblin.r = nextR; // Lane clear: move forward
                         }
                     }
                     
