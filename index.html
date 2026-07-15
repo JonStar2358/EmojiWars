@@ -438,17 +438,11 @@
 
         function executeTimeStep(steps) {
             for(let s=0; s<steps; s++) {
-                // Auto-trigger next wave if board is clear
-                if (gameState.goblins.length === 0) {
-                    gameState.wave++;
-                    spawnCurrentWave();
-                }
-
                 gameState.turn++;
                 gameState.gold += (steps === 2 && s === 1) ? 15 : 10;
                 gameState.explosions = []; 
 
-                // 1. SAFE DEFENDER ATTACK ROUTINE (BOUNDS FILTERED)
+                // 1. FRIENDLY FORCES ATTACK ROUTINE
                 for(let r=0; r<ROWS; r++) {
                     for(let c=0; c<COLS; c++) {
                         let asset = gameState.grid[r][c];
@@ -467,9 +461,7 @@
                                 }
                             }
                         } else {
-                            // Archers can now scan enemies entering Row 0 or greater safely
                             let targetGoblin = gameState.goblins.find(g => {
-                                if (g.r < 0) return false; 
                                 let rowDiff = Math.abs(g.r - r);
                                 let colDiff = Math.abs(g.c - c);
                                 return (rowDiff === 0 && colDiff <= asset.range) || (colDiff === 0 && rowDiff <= asset.range);
@@ -482,50 +474,6 @@
                         }
                     }
                 }
-
-                gameState.goblins = gameState.goblins.filter(g => g.hp > 0);
-
-                // 2. ENEMY CRASH-PROOF PROGRESSION ENGINE
-                gameState.goblins.forEach(goblin => {
-                    let nextR = goblin.r + 1;
-                    
-                    // Safe advance if enemy is still waiting in offscreen queue
-                    if (nextR < 0) {
-                        goblin.r = nextR;
-                        return;
-                    }
-
-                    if(nextR >= 0 && nextR < ROWS) {
-                        let blockingAsset = gameState.grid[nextR][goblin.c];
-                        
-                        if(blockingAsset) {
-                            blockingAsset.hp -= 1; 
-                            gameState.explosions.push({ r: nextR, c: goblin.c });
-                            
-                            if(blockingAsset.hp <= 0) {
-                                gameState.grid[nextR][goblin.c] = null; 
-                            }
-                            
-                            if(blockingAsset.type === 'structure' && blockingAsset.icon !== '🧱' && blockingAsset.icon !== '🏰') {
-                                if(goblin.c + 1 < COLS && !gameState.grid[goblin.r][goblin.c+1]) goblin.c++;
-                                else if(goblin.c - 1 >= 0 && !gameState.grid[goblin.r][goblin.c-1]) goblin.c--;
-                            }
-                        } else {
-                            goblin.r = nextR; 
-                        }
-                    }
-                    
-                    // Town Hall breach check
-                    if(goblin.r === 6 && goblin.c === 4) {
-                        gameState.townHallHp--;
-                        goblin.hp = 0;
-                    }
-                });
-
-                gameState.goblins = gameState.goblins.filter(g => g.hp > 0);
-            }
-            updateDashboard();
-        }
 
                 // Clean dead goblins immediately
                 gameState.goblins = gameState.goblins.filter(g => g.hp > 0);
